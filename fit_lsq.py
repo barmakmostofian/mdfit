@@ -11,11 +11,22 @@ parser.add_argument('--response_data',  type=str,   help='Path to the response d
 args = parser.parse_args()
 
 
-#Load data
-df_feat     = pd.read_csv(args.feat_data,,    sep=',', header=0, index_col=0)
+# Load data
+df_feat     = pd.read_csv(args.feat_data,     sep=',', header=0, index_col=0)
 df_response = pd.read_csv(args.response_data, sep=',', header=0, index_col=0)
 
-df_data     = pd.merge(df_feat, df_response, left_index=True, right_index=True)
+
+# Merge data to clearly define feature matrix (X) and response variable (y) for all data instanes
+df_feat.index.name     = 'mol_name'
+df_response.index.name = 'mol_name'
+
+df_data = pd.merge(df_feat, df_response, on='mol_name', how='left')
+
+df_data.set_index('mol_name')
+df_data = df_data.dropna()
+
+X = np.array(df_data.drop('potency', axis=1))
+y = np.array(df_data['potency'])
 
 
 # Initialize model and LOO strategy
