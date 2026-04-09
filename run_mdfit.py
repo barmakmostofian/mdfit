@@ -57,19 +57,22 @@ elif args.model_type == 'ridge' :
 # If regularization models are used, we need to apply a nested-CV architecture to optimize hyperparameters
 
 # Define the LOO-CV object for the outer loop, used to split and iterate through the data below
-loo = LeaveOneOut()
+outer_loo = LeaveOneOut()
 
 # Define number of instances
-y_pred = np.zeros(y.shape[0])
+#y_pred = np.zeros(y.shape[0])
 
 
 y_true_all  = [] 
 y_pred_all  = [] 
 all_best_alphas = []
 
-for train_index, test_index in loo.split(X):
+for train_index, test_index in outer_loo.split(X):
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = y[train_index], y[test_index]
+
+    # The true output value of this fold is saved for later comparison with all predicted output values. 
+    y_true_all.append(y_test[0])
 
     # Data are being scaled. 
     # Of course, each training fold on its own. Otherwise, fitting the full dataset before splittinig would leak test statistics into training.
@@ -78,19 +81,24 @@ for train_index, test_index in loo.split(X):
     X_train_scaled = feat_scaler.fit_transform(X_train)
     X_test_scaled  = feat_scaler.transform(X_test)
 
+    # The inner loop for hyperparameter (alpha) optimization is performed with LassoCV, which efficiently sweeps the alpha grid.
+    # The model is initialized, fitted on (scaled) training data and the optimal hyperparameter is saved.
     inner_model = LassoCV(alphas = my_alpha_grid, cv=LeaveOneOut(), max_iter=10_000)
-
     inner_model.fit(X_train_scaled, y_train)
     best_alpha = inner_model.alpha_
     all_best_alphas.append(best_alpha)
 
+    # The actual (outer) model is trained with optimal hyperparameter alpha.
     outer_model = Lasso(alpha=best_alpha, max_iter=10_000)
     outer_model.fit(X_train_scaled, y_train)
 
+    # The model is now applied and its predicted value is saved to compare to the true value saved above. 
     y_pred = outer_model.predict(X_test_scaled)
-    y_true_all.append(y_test[0])
     y_pred_all.append(y_pred[0])
 
+
+#    model.fit(X_train, y_train)
+#    y_pred[test_index] = model.predict(X_test)
 
 
 
