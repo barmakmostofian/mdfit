@@ -97,8 +97,3 @@ for train_index, test_index in outer_loo.split(X):
     y_pred_all.append(y_pred[0])
 
 
-#    model.fit(X_train, y_train)
-#    y_pred[test_index] = model.predict(X_test)
-
-
-
