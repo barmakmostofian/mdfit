@@ -42,25 +42,23 @@ y = np.array(df_data['potency'])
 ids = np.array(df_data.index)
 
 
-
-
+# UNDER CONSTRUCTION:
 # Define regression model 
-if args.model_type == 'lsq' :
-    model = LinearRegression()
-elif args.model_type == 'lasso' :
-    my_alpha_grid = np.linspace(1e-5, 1, 500)
-    model = Lasso(...)
-elif args.model_type == 'ridge' :
-    model = Ridge(...)
+#if args.model_type == 'lsq' :
+#    model = LinearRegression()
+#elif args.model_type == 'lasso' :
+#    my_alpha_grid = np.linspace(1e-5, 1, 500)
+#    model = Lasso(...)
+#elif args.model_type == 'ridge' :
+#    model = Ridge(...)
 
+
+my_alpha_grid = np.linspace(1e-5, 1, 500)
 
 # If regularization models are used, we need to apply a nested-CV architecture to optimize hyperparameters
 
 # Define the LOO-CV object for the outer loop, used to split and iterate through the data below
 outer_loo = LeaveOneOut()
-
-# Define number of instances
-#y_pred = np.zeros(y.shape[0])
 
 
 y_true_all  = [] 
@@ -96,4 +94,8 @@ for train_index, test_index in outer_loo.split(X):
     y_pred = outer_model.predict(X_test_scaled)
     y_pred_all.append(y_pred[0])
 
+
+print(r2_score(y_true_all, y_pred_all))
+print(mean_absolute_error(y_true_all, y_pred_all))
+print(kendalltau(y_true_all, y_pred_all)[0])
 
