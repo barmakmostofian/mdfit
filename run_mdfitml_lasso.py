@@ -16,19 +16,21 @@ from sklearn.metrics import r2_score, root_mean_squared_error, mean_absolute_err
 
 # Set up command-line arguments
 parser = argparse.ArgumentParser(description='Read data filefrom the command line.')
-parser.add_argument('--feat_data',      type=str,   help='Path to the feature data file')
-parser.add_argument('--response_data',  type=str,   help='Path to the response data file')
-parser.add_argument('--model_type',     type=str,   help='regression model type', help='Use \'lsq\', \'lasso\', or \'ridge\'')
+parser.add_argument('--data_feat', type=str,   help='Path to the feature data file')
+parser.add_argument('--data_obs',  type=str,   help='Path to the observed data file')
 args = parser.parse_args()
 
 
 # Load data
-df_feat     = pd.read_csv(args.feat_data,     sep=',', header=0, index_col=0)
-df_response = pd.read_csv(args.response_data, sep=',', header=0, index_col=0)
+df_feat = pd.read_csv(args.data_feat, sep=',', header=0, index_col=0)
+df_obs  = pd.read_csv(args.data_obs,  sep=',', header=0, index_col=0)
 
 
-# Merge data to clearly define feature matrix (X) and response variable (y) for all data instances
-# First, redefine mol index column names for correct merging, then remove any instance, for which data are missing 
+# Merge data to clearly define feature matrix (X) and observed (response) variable (y) 
+# for all data instances. First, redefine mol index column names for correct merging. 
+# Upon merging, the same observed value may be added to multiple instances, which stem 
+# from MD run repeats. Then remove any instance, for which data are missing. 
+
 df_feat.index.name     = 'mol_name'
 df_response.index.name = 'mol_name'
 
@@ -36,29 +38,17 @@ df_data = pd.merge(df_feat, df_response, on='mol_name', how='left')
 
 df_data = df_data.dropna()
 
-
 X = np.array(df_data.drop('potency', axis=1))
 y = np.array(df_data['potency'])
 ids = np.array(df_data.index)
 
 
-# UNDER CONSTRUCTION:
-# Define regression model 
-#if args.model_type == 'lsq' :
-#    model = LinearRegression()
-#elif args.model_type == 'lasso' :
-#    my_alpha_grid = np.linspace(1e-5, 1, 500)
-#    model = Lasso(...)
-#elif args.model_type == 'ridge' :
-#    model = Ridge(...)
-
-
-my_alpha_grid = np.linspace(1e-5, 1, 500)
-
-# If regularization models are used, we need to apply a nested-CV architecture to optimize hyperparameters
 
 # Define the LOO-CV object for the outer loop, used to split and iterate through the data below
 outer_loo = LeaveOneOut()
+
+# Define number of instances
+#y_pred = np.zeros(y.shape[0])
 
 
 y_true_all  = [] 
@@ -73,14 +63,16 @@ for train_index, test_index in outer_loo.split(X):
     y_true_all.append(y_test[0])
 
     # Data are being scaled. 
-    # Of course, each training fold on its own. Otherwise, fitting the full dataset before splittinig would leak test statistics into training.
+    # Of course, each training fold on its own. Otherwise, fitting the full dataset before splittinig 
+    # would leak test statistics into training.
     # The scaler object fitted on the training data is applied to the test data.
     feat_scaler = MinMaxScaler()
     X_train_scaled = feat_scaler.fit_transform(X_train)
     X_test_scaled  = feat_scaler.transform(X_test)
 
-    # The inner loop for hyperparameter (alpha) optimization is performed with LassoCV, which efficiently sweeps the alpha grid.
-    # The model is initialized, fitted on (scaled) training data and the optimal hyperparameter is saved.
+    # The inner loop for hyperparameter (alpha) optimization is performed with LassoCV, 
+    # which efficiently sweeps the alpha grid. The model is initialized, fitted on (scaled) training data 
+    # and the optimal hyperparameter is saved.
     inner_model = LassoCV(alphas = my_alpha_grid, cv=LeaveOneOut(), max_iter=10_000)
     inner_model.fit(X_train_scaled, y_train)
     best_alpha = inner_model.alpha_
@@ -95,7 +87,6 @@ for train_index, test_index in outer_loo.split(X):
     y_pred_all.append(y_pred[0])
 
 
-print(r2_score(y_true_all, y_pred_all))
-print(mean_absolute_error(y_true_all, y_pred_all))
-print(kendalltau(y_true_all, y_pred_all)[0])
+
+
 
