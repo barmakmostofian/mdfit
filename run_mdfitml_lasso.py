@@ -1,7 +1,7 @@
 """
-nested_loocv_lasso.py
+run_mdfitml_lasso.py
 =====================
-Nested Leave-One-Out Cross-Validation with Lasso regression.
+Lasso regression with nested leave-one-out cross-validation.
 
 Structure
 ---------
