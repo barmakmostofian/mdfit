@@ -1,1 +1,9 @@
-File formats
+Files and file formats:
+
+`feat_matrix.csv` is the feature matrix in csv format.<br>
+Each row corresponds to one simulation and each column to one feature. The rown names are ligand names and, since the same protein-ligand system may have been simulated multiple times, rows with identical names may exist. The column (feature) names should be descriptive as they will read in and ranked by the MDFitML.
+
+`obs_pic50.csv` contains the observed target values (here: pIC50 activity values).<br>
+For each ligand, one value is provided. The ligand names must correspond to those in the feature matrix. 
+
+If one ligand is present in one file but not in the other (e.g. activity values exist but it has not been simulated or vice versa) for some reason, MDFitML will exclude that ligand from analysis when loading and merging these these two files. 
